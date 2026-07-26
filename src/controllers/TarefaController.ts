@@ -16,9 +16,11 @@ class TarefaController {
     }
   }
 
-  // Endpoint 2: listar todas as tarefas salvas
+  // Endpoint 2: listar todas as tarefas salvas (aceita ?completed=true/false)
   list(req: Request, res: Response) {
-    const tarefas = service.list();
+    const { completed } = req.query;
+    const filtro = completed === undefined ? undefined : completed === 'true';
+    const tarefas = service.list(filtro);
     return res.status(200).json(tarefas);
   }
 

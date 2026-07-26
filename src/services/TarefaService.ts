@@ -26,9 +26,13 @@ class TarefaService {
     return novaTarefa;
   }
 
-  // Endpoint 2: listar todas as tarefas salvas
-  list(): Tarefa[] {
-    return tarefas;
+  // Endpoint 2: listar todas as tarefas salvas (com filtro por completed)
+  list(completed?: boolean): Tarefa[] {
+    if (completed === undefined) {
+      return tarefas;
+    }
+
+    return tarefas.filter((tarefa) => tarefa.completed === completed);
   }
 
   // Endpoint 3: buscar tarefa específica por ID
