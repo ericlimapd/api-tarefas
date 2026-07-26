@@ -4,7 +4,7 @@ import { TarefaService } from '../services/TarefaService';
 const service = new TarefaService();
 
 class TarefaController {
-  // Gerencia a rota de CRIAR uma tarefa
+  // Endpoint 1: criar nova tarefa
   create(req: Request, res: Response) {
     try {
       const { title } = req.body;
@@ -16,13 +16,13 @@ class TarefaController {
     }
   }
 
-  // Gerencia a rota de LISTAR todas as tarefas
+  // Endpoint 2: listar todas as tarefas salvas
   list(req: Request, res: Response) {
     const tarefas = service.list();
     return res.status(200).json(tarefas);
   }
 
-  // Gerencia a rota de BUSCAR uma tarefa pelo id
+  // Endpoint 3: buscar tarefa específica por ID
   findById(req: Request, res: Response) {
     const id = req.params.id as string;
     const tarefa = service.findById(id);
@@ -34,7 +34,7 @@ class TarefaController {
     return res.status(200).json(tarefa);
   }
 
-  // Gerencia a rota de ATUALIZAR uma tarefa
+  // Endpoint 4: atualizar uma tarefa existente
   update(req: Request, res: Response) {
     const id = req.params.id as string;
     const { title, completed } = req.body;
@@ -47,7 +47,7 @@ class TarefaController {
     return res.status(200).json(tarefa);
   }
 
-  // Gerencia a rota de DELETAR uma tarefa
+  // Endpoint 5 apagar uma tarefa
   delete(req: Request, res: Response) {
     const id = req.params.id as string;
     const removida = service.delete(id);

@@ -8,7 +8,8 @@ interface ICriarTarefa {
 }
 
 class TarefaService {
-  // Cria uma nova tarefa
+
+  // Endpoint 1: criar nova tarefa
   create({ title }: ICriarTarefa): Tarefa {
     // --- AQUI MORA A LÓGICA DE NEGÓCIO ---
     if (!title) {
@@ -25,17 +26,17 @@ class TarefaService {
     return novaTarefa;
   }
 
-  // Lista todas as tarefas
+  // Endpoint 2: listar todas as tarefas salvas
   list(): Tarefa[] {
     return tarefas;
   }
 
-  // Busca uma tarefa específica pelo id
+  // Endpoint 3: buscar tarefa específica por ID
   findById(id: string): Tarefa | undefined {
     return tarefas.find((tarefa) => tarefa.id === id);
   }
 
-  // Atualiza uma tarefa existente
+  // Endpoint 4: atualizar uma tarefa existente
   update(id: string, dados: { title?: string; completed?: boolean }): Tarefa | undefined {
     const tarefa = this.findById(id);
 
@@ -54,7 +55,7 @@ class TarefaService {
     return tarefa;
   }
 
-  // Remove uma tarefa
+  // Endpoint 5 apagar uma tarefa
   delete(id: string): boolean {
     const index = tarefas.findIndex((tarefa) => tarefa.id === id);
 
