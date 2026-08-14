@@ -5,10 +5,10 @@ const service = new TarefaService();
 
 class TarefaController {
   // Endpoint 1: criar nova tarefa
-  create(req: Request, res: Response) {
+  async create(req: Request, res: Response) {
     try {
       const { title } = req.body;
-      const tarefa = service.create({ title });
+      const tarefa = await service.create(title);
       return res.status(201).json(tarefa);
     } catch (error) {
       const mensagem = error instanceof Error ? error.message : 'Erro ao criar tarefa';
@@ -17,48 +17,60 @@ class TarefaController {
   }
 
   // Endpoint 2: listar todas as tarefas salvas (aceita ?completed=true/false)
-  list(req: Request, res: Response) {
-    const { completed } = req.query;
-    const filtro = completed === undefined ? undefined : completed === 'true';
-    const tarefas = service.list(filtro);
-    return res.status(200).json(tarefas);
+  async list(req: Request, res: Response) {
+    try {
+      const { completed } = req.query;
+      const filtro = completed === undefined ? undefined : completed === 'true';
+      const tarefas = await service.getAll(filtro);
+      return res.status(200).json(tarefas);
+    } catch (error) {
+      const mensagem = error instanceof Error ? error.message : 'Erro ao listar tarefas';
+      return res.status(500).json({ erro: mensagem });
+    }
   }
 
   // Endpoint 3: buscar tarefa específica por ID
-  findById(req: Request, res: Response) {
-    const id = req.params.id as string;
-    const tarefa = service.findById(id);
+  async findById(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      const tarefa = await service.getById(id);
 
-    if (!tarefa) {
-      return res.status(404).json({ erro: 'Tarefa não encontrada' });
+      if (!tarefa) {
+        return res.status(404).json({ erro: 'Tarefa não encontrada' });
+      }
+
+      return res.status(200).json(tarefa);
+    } catch (error) {
+      const mensagem = error instanceof Error ? error.message : 'Erro ao buscar tarefa';
+      return res.status(500).json({ erro: mensagem });
     }
-
-    return res.status(200).json(tarefa);
   }
 
   // Endpoint 4: atualizar uma tarefa existente
-  update(req: Request, res: Response) {
-    const id = req.params.id as string;
-    const { title, completed } = req.body;
-    const tarefa = service.update(id, { title, completed });
-
-    if (!tarefa) {
-      return res.status(404).json({ erro: 'Tarefa não encontrada' });
+  async update(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      const { title, completed } = req.body;
+      const tarefa = await service.update(id, { title, completed });
+      return res.status(200).json(tarefa);
+    } catch (error) {
+      const mensagem = error instanceof Error ? error.message : 'Erro ao atualizar tarefa';
+      const status = mensagem === 'Tarefa não encontrada.' ? 404 : 400;
+      return res.status(status).json({ erro: mensagem });
     }
-
-    return res.status(200).json(tarefa);
   }
 
-  // Endpoint 5 apagar uma tarefa
-  delete(req: Request, res: Response) {
-    const id = req.params.id as string;
-    const removida = service.delete(id);
-
-    if (!removida) {
-      return res.status(404).json({ erro: 'Tarefa não encontrada' });
+  // Endpoint 5: apagar uma tarefa
+  async delete(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      await service.delete(id);
+      return res.status(204).send();
+    } catch (error) {
+      const mensagem = error instanceof Error ? error.message : 'Erro ao deletar tarefa';
+      const status = mensagem === 'Tarefa não encontrada.' ? 404 : 400;
+      return res.status(status).json({ erro: mensagem });
     }
-
-    return res.status(204).send();
   }
 }
 

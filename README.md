@@ -1,40 +1,74 @@
 # api-tarefas
 
-API de Gerenciamento de Tarefas (To-Do List), construída com **Node.js**, **Express** e **TypeScript**, seguindo o padrão **MVC** (Routes → Controllers → Services).
+API de Gerenciamento de Tarefas (To-Do List), construída com **Node.js**, **Express**, **TypeScript** e **Prisma** (MySQL), seguindo o padrão **MVC** (Routes → Controllers → Services).
 
-Projeto da Semana 7 da trilha de back-end da iJunior.
+Projeto das Semanas 7 e 8 da trilha de back-end da iJunior. Na Semana 7 os dados ficavam em memória; na Semana 8 passaram a ser persistidos num banco MySQL real via Prisma.
 
 ## Tecnologias
 
 - Node.js
 - Express
 - TypeScript
-- ts-node-dev (hot reload em desenvolvimento)
+- Prisma (ORM) + MySQL
+- tsx (hot reload em desenvolvimento)
 
 ## Como rodar
 
+### 1. Banco de dados
+
+1. Tenha o MySQL instalado e rodando localmente.
+2. Crie o banco:
+   ```sql
+   CREATE DATABASE bootcamp_tasks;
+   ```
+
+### 2. Variáveis de ambiente
+
+Copie o `.env.example` para `.env` e preencha com as credenciais do seu MySQL:
 ```bash
-npm install
-npm run dev
+cp .env.example .env
 ```
 
+### 3. Instalar e preparar
+
+```bash
+npm install
+npx prisma generate
+npx prisma migrate dev
+```
+O `migrate dev` cria a tabela `Task` no banco (as migrations já commitadas em `prisma/migrations/` descrevem essa estrutura).
+
+### 4. Rodar a API
+
+```bash
+npm run dev
+```
 O servidor sobe em `http://localhost:3333`.
 
-> **Armazenamento:** as tarefas ficam guardadas em um array em memória (dentro do `TarefaService`). Isso significa que, ao reiniciar o servidor, todos os dados são perdidos — comportamento esperado nesta etapa do projeto (o banco de dados entra na Semana 8).
+### 5. (Opcional) Explorar o banco visualmente
+
+```bash
+npx prisma studio
+```
+Abre em `http://localhost:5555` — mostra a tabela `Task` e permite ver/editar os dados manualmente.
 
 ## Estrutura do projeto
 
 ```
+prisma/
+  schema.prisma               # define o model Task e a conexão com o banco
+  migrations/                 # histórico versionado das mudanças no banco
 src/
-  server.ts                    # sobe o Express e conecta as rotas
-  models/
-    Tarefa.ts                  # entidade Tarefa (id, title, completed)
+  server.ts                   # só sobe o servidor (app.listen)
+  config/
+    expressConfig.ts          # cria o app Express, aplica middlewares e rotas
+    prismaClient.ts           # instância única (singleton) do PrismaClient
   services/
-    TarefaService.ts           # lógica de negócio + array em memória
+    TarefaService.ts          # lógica de negócio + acesso ao banco via Prisma
   controllers/
-    TarefaController.ts        # lida com req/res e chama o Service
+    TarefaController.ts       # lida com req/res e chama o Service
   routes/
-    tarefa.routes.ts           # mapeia os endpoints para o Controller
+    tarefa.routes.ts          # mapeia os endpoints para o Controller
 ```
 
 ## Endpoints
@@ -53,11 +87,14 @@ Todas as rotas têm o prefixo `/tasks`.
 
 ```json
 {
-  "id": "0.31130138821676034",
-  "title": "Estudar",
-  "completed": false
+  "id": 1,
+  "title": "Estudar Prisma",
+  "completed": false,
+  "createdAt": "2026-08-03T02:33:41.794Z"
 }
 ```
+
+O `id` é um inteiro autoincrementado pelo próprio banco (`@default(autoincrement())` no `schema.prisma`) — não é mais gerado no código como na Semana 7.
 
 ## Filtro por status (`completed`)
 
@@ -67,18 +104,13 @@ O endpoint `GET /tasks` aceita um filtro opcional via **query string**, usando o
 - `GET /tasks?completed=true` → retorna apenas as tarefas **concluídas**.
 - `GET /tasks?completed=false` → retorna apenas as tarefas **não concluídas**.
 
-### Como testar
-
-1. Suba o servidor com `npm run dev`.
-2. Crie duas tarefas com `POST /tasks`.
-3. Marque uma delas como concluída com `PUT /tasks/:id` enviando `{ "completed": true }`.
-4. Compare os resultados:
-   - `GET http://localhost:3333/tasks` → devolve as duas.
-   - `GET http://localhost:3333/tasks?completed=true` → devolve só a que você marcou.
-   - `GET http://localhost:3333/tasks?completed=false` → devolve só a outra.
-
-No Postman, isso é feito adicionando `completed` como parâmetro na aba **Params** da requisição `GET /tasks` — o Postman monta a URL com `?completed=...` automaticamente.
+No Postman, isso é feito adicionando `completed` como parâmetro na aba **Params** da requisição `GET /tasks`.
 
 ## Testando a API
 
 Uma Collection do Postman com as 5 requisições (e o filtro por `completed`) foi exportada e enviada junto com a entrega, contendo exemplos prontos de cada endpoint.
+
+## Troubleshooting
+
+**Erro `pool timeout: failed to retrieve a connection from pool`**
+Acontece porque o MySQL 8+ usa por padrão o plugin de autenticação `caching_sha2_password`, que o driver do Prisma (`@prisma/adapter-mariadb`) só negocia corretamente com a opção `allowPublicKeyRetrieval: true` — já configurada em `src/config/prismaClient.ts`. Se acontecer de novo em outra máquina, confira se essa opção está presente e se as variáveis `DATABASE_*` do `.env` estão corretas.

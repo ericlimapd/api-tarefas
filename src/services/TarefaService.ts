@@ -1,74 +1,65 @@
-import { Tarefa } from '../models/Tarefa';
+import { prisma } from '../config/prismaClient';
+import { Prisma } from '../../generated/prisma/client';
 
-// Na S7, guardamos em memória. Na S8, trocamos isso pelo Prisma.
-const tarefas: Tarefa[] = [];
-
-interface ICriarTarefa {
-  title: string;
+interface IAtualizarTarefa {
+  title?: string;
+  completed?: boolean;
 }
 
 class TarefaService {
-
-  // Endpoint 1: criar nova tarefa
-  create({ title }: ICriarTarefa): Tarefa {
+  // Cria uma nova tarefa
+  async create(title: string) {
     // --- AQUI MORA A LÓGICA DE NEGÓCIO ---
     if (!title) {
       throw new Error('O título da tarefa é obrigatório');
     }
 
-    const novaTarefa: Tarefa = {
-      id: Math.random().toString(),
-      title,
-      completed: false,
-    };
-
-    tarefas.push(novaTarefa);
-    return novaTarefa;
+    return prisma.task.create({
+      data: { title },
+    });
   }
 
-  // Endpoint 2: listar todas as tarefas salvas (com filtro por completed)
-  list(completed?: boolean): Tarefa[] {
+  // Lista todas as tarefas (com filtro opcional por completed)
+  async getAll(completed?: boolean) {
     if (completed === undefined) {
-      return tarefas;
+      return prisma.task.findMany();
     }
 
-    return tarefas.filter((tarefa) => tarefa.completed === completed);
+    return prisma.task.findMany({ where: { completed } });
   }
 
-  // Endpoint 3: buscar tarefa específica por ID
-  findById(id: string): Tarefa | undefined {
-    return tarefas.find((tarefa) => tarefa.id === id);
+  // Busca uma tarefa específica pelo id
+  async getById(id: number) {
+    return prisma.task.findUnique({ where: { id } });
   }
 
-  // Endpoint 4: atualizar uma tarefa existente
-  update(id: string, dados: { title?: string; completed?: boolean }): Tarefa | undefined {
-    const tarefa = this.findById(id);
-
-    if (!tarefa) {
-      return undefined;
+  // Atualiza uma tarefa existente
+  async update(id: number, dados: IAtualizarTarefa) {
+    try {
+      return await prisma.task.update({
+        where: { id },
+        data: dados,
+      });
+    } catch (error) {
+      // Código P2025 = "Registro não encontrado para a operação"
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new Error('Tarefa não encontrada.');
+      }
+      throw error; // re-lança outros erros desconhecidos
     }
-
-    if (dados.title !== undefined) {
-      tarefa.title = dados.title;
-    }
-
-    if (dados.completed !== undefined) {
-      tarefa.completed = dados.completed;
-    }
-
-    return tarefa;
   }
 
-  // Endpoint 5 apagar uma tarefa
-  delete(id: string): boolean {
-    const index = tarefas.findIndex((tarefa) => tarefa.id === id);
-
-    if (index === -1) {
-      return false;
+  // Remove uma tarefa
+  async delete(id: number): Promise<void> {
+    try {
+      await prisma.task.delete({ where: { id } });
+    } catch (error) {
+      // Código P2025 = "Registro não encontrado para a operação"
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new Error('Tarefa não encontrada.');
+      }
+      throw error; // re-lança outros erros desconhecidos
     }
-
-    tarefas.splice(index, 1);
-    return true;
   }
 }
 
